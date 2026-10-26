@@ -224,4 +224,165 @@ class ApiService {
     );
   }
 
+
+Future<List<dynamic>> obtenerResenas() {
+  return _obtenerLista('resenas', 'tus reseñas');
+}
+
+Future<Map<String, dynamic>> crearResena({
+  required int citaId,
+  required int calificacion,
+  String? comentario,
+}) async {
+  final token = await getToken();
+
+  if (token == null || token.isEmpty) {
+    throw Exception('Tu sesión ha expirado. Inicia sesión nuevamente.');
+  }
+
+  final response = await http.post(
+    Uri.parse('$baseUrl/v1/resenas/'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Token $token',
+    },
+    body: jsonEncode({
+      'cita': citaId,
+      'calificacion': calificacion,
+      'comentario': comentario?.trim() ?? '',
+    }),
+  ).timeout(const Duration(seconds: 20));
+
+  dynamic data;
+  try {
+    data = response.body.isNotEmpty
+        ? jsonDecode(response.body)
+        : <String, dynamic>{};
+  } catch (_) {
+    throw Exception(
+      'El servidor devolvió una respuesta inesperada '
+      '(HTTP ${response.statusCode}).',
+    );
+  }
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  throw Exception(
+    'No se pudo guardar la reseña '
+    '(HTTP ${response.statusCode}): $data',
+  );
+}
+
+
+  Future<Map<String, dynamic>> obtenerMiPerfil() async {
+    final token = await getToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Tu sesión ha expirado. Inicia sesión nuevamente.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/v1/clientes/'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Token $token',
+      },
+    ).timeout(const Duration(seconds: 20));
+
+    if (response.statusCode == 200) {
+      final dynamic data = jsonDecode(response.body);
+
+      List<dynamic> clientes;
+
+      if (data is List) {
+        clientes = data;
+      } else if (data is Map && data['results'] is List) {
+        clientes = data['results'] as List<dynamic>;
+      } else {
+        throw Exception('El formato del perfil recibido no es válido.');
+      }
+
+      if (clientes.isEmpty) {
+        throw Exception(
+          'No se encontró un perfil de cliente asociado a tu cuenta.',
+        );
+      }
+
+      return Map<String, dynamic>.from(clientes.first as Map);
+    }
+
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('No tienes autorización para consultar tu perfil.');
+    }
+
+    throw Exception(
+      'No se pudo consultar tu perfil (HTTP ${response.statusCode}).',
+    );
+  }
+
+  Future<Map<String, dynamic>> actualizarMiPerfil({
+    required int id,
+    required String nombre,
+    required String apellido,
+    required String telefono,
+    String? fechaNacimiento,
+  }) async {
+    final token = await getToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Tu sesión ha expirado. Inicia sesión nuevamente.');
+    }
+
+    final response = await http.patch(
+      Uri.parse('$baseUrl/v1/clientes/$id/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Token $token',
+      },
+      body: jsonEncode({
+        'nombre': nombre.trim(),
+        'apellido': apellido.trim(),
+        'telefono': telefono.trim(),
+        'fecha_nacimiento': fechaNacimiento,
+      }),
+    ).timeout(const Duration(seconds: 20));
+
+    dynamic data;
+
+    try {
+      data = response.body.isNotEmpty
+          ? jsonDecode(response.body)
+          : <String, dynamic>{};
+    } catch (_) {
+      throw Exception(
+        'El servidor devolvió una respuesta inesperada '
+        '(HTTP ${response.statusCode}).',
+      );
+    }
+
+    if (response.statusCode == 200) {
+      return Map<String, dynamic>.from(data as Map);
+    }
+
+    if (response.statusCode == 400) {
+      throw Exception('No se pudieron validar los datos: $data');
+    }
+
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw Exception('No tienes autorización para actualizar este perfil.');
+    }
+
+    if (response.statusCode == 404) {
+      throw Exception('No se encontró el perfil solicitado.');
+    }
+
+    throw Exception(
+      'Error al actualizar el perfil (HTTP ${response.statusCode}): $data',
+    );
+  }
+
 }

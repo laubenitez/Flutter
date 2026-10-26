@@ -4,6 +4,9 @@ import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import '../services/api_service.dart';
 import 'citas_screen.dart';
+import 'mis_citas_screen.dart';
+import 'resenas_screen.dart';
+import 'editar_perfil_screen.dart';
 
 class ClientDashboardScreen extends ConsumerStatefulWidget {
   const ClientDashboardScreen({super.key});
@@ -218,116 +221,104 @@ Widget _buildServiceCard(Map<String, dynamic> servicio) {
 }
 
 
-  Widget _buildCitasTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Próximas Citas',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFB82D63),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: const ListTile(
-              leading:
-                  Icon(Icons.access_time_filled, color: Color(0xFFE91E63)),
-              title: Text('Manicure Semi'),
-              subtitle: Text('Fecha: 25 Sep, 2026 - 4:00 PM\nEstado: Confirmada'),
-              isThreeLine: true,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  
+Widget _buildCitasTab() {
+  return const MisCitasScreen();
+}
 
-  Widget _buildResenasTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tus Valoraciones',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFB82D63),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: const ListTile(
-              leading: Icon(Icons.star, color: Colors.amber),
-              title: Text('Excelente servicio'),
-              subtitle:
-                  Text('El masaje facial estuvo increíble. Muy recomendado.'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildPerfilTab(Usuario? usuario) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const CircleAvatar(
-            radius: 40,
-            backgroundColor: Color(0xFFFFDCE9),
-            child: Icon(Icons.person, size: 50, color: Color(0xFFD92F70)),
+Widget _buildResenasTab() {
+  return const ResenasScreen();
+}
+
+  
+Widget _buildPerfilTab(Usuario? usuario) {
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      children: [
+        const CircleAvatar(
+          radius: 40,
+          backgroundColor: Color(0xFFFFDCE9),
+          child: Icon(
+            Icons.person,
+            size: 50,
+            color: Color(0xFFD92F70),
           ),
-          const SizedBox(height: 15),
-          Text(
-            '${usuario?.nombre ?? "Cliente"} ${usuario?.apellido ?? ""}',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF6D4657),
-            ),
+        ),
+        const SizedBox(height: 15),
+        Text(
+          '${usuario?.nombre ?? "Cliente"} ${usuario?.apellido ?? ""}',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF6D4657),
           ),
-          const SizedBox(height: 20),
-          ListTile(
-            leading: const Icon(Icons.email, color: Color(0xFFD92F70)),
-            title: const Text('Correo'),
-            subtitle: Text(usuario?.email ?? 'No registrado'),
+        ),
+        const SizedBox(height: 20),
+        ListTile(
+          leading: const Icon(
+            Icons.email,
+            color: Color(0xFFD92F70),
           ),
-          ListTile(
-            leading: const Icon(Icons.phone, color: Color(0xFFD92F70)),
-            title: const Text('Teléfono'),
-            subtitle: Text(usuario?.telefono ?? 'No registrado'),
+          title: const Text('Correo'),
+          subtitle: Text(
+            usuario?.email.isNotEmpty == true
+                ? usuario!.email
+                : 'No registrado',
           ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
+        ),
+        ListTile(
+          leading: const Icon(
+            Icons.phone,
+            color: Color(0xFFD92F70),
+          ),
+          title: const Text('Teléfono'),
+          subtitle: Text(
+            usuario?.telefono.isNotEmpty == true
+                ? usuario!.telefono
+                : 'No registrado',
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE91E63),
-              minimumSize: const Size(double.infinity, 42),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 46),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Perfil actualizado')),
+            onPressed: () async {
+              final actualizado =
+                  await Navigator.push<Map<String, dynamic>>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditarPerfilScreen(),
+                ),
               );
+
+              if (!mounted || actualizado == null) return;
+
+              ref.read(authProvider.notifier).registrarOLoguear(
+                    nombre: actualizado['nombre']?.toString() ?? '',
+                    apellido: actualizado['apellido']?.toString() ?? '',
+                    telefono: actualizado['telefono']?.toString() ?? '',
+                    email: actualizado['email']?.toString() ?? '',
+                  );
+
+              setState(() {});
             },
-            icon: const Icon(Icons.edit, color: Colors.white),
-            label: const Text(
-              'Editar Datos',
-              style: TextStyle(color: Colors.white),
-            ),
+            icon: const Icon(Icons.edit),
+            label: const Text('Editar Datos'),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 }
